@@ -59,6 +59,15 @@ The final boss: navigate to a page, fill in a license number, click through tabs
 
 - [Texas Medical Board search](https://profile.tmb.state.tx.us/SearchBA.aspx)
 
+### AI-powered scraper writer
+
+Point an AI agent at a website and let it write a Playwright scraper for you. You describe what you want in plain English, it explores the page and produces a working script. Requires a free Google AI API key.
+
+[Open in Colab](https://colab.research.google.com/github/jsoma/workshop-browser-automation/blob/main/docs/browser-automation/06-scraper-writer-ANSWERS.ipynb) | [Code-along](https://colab.research.google.com/github/jsoma/workshop-browser-automation/blob/main/docs/browser-automation/06-scraper-writer.ipynb) | [Read online](https://jsoma.github.io/workshop-browser-automation/browser-automation/06-scraper-writer-ANSWERS.html)
+
+- [Google AI Studio (free API key)](https://aistudio.google.com/apikey)
+- [PydanticAI](https://ai.pydantic.dev/)
+
 ## Contact
 
 [js4571@columbia.edu](mailto:js4571@columbia.edu) · [@dangerscarf](https://x.com/dangerscarf) · [Lede Program](https://ledeprogram.com/) · [jonathansoma.com](https://jonathansoma.com/)

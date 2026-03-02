@@ -70,6 +70,24 @@ sections:
         links:
           - name: "Texas Medical Board search"
             url: "https://profile.tmb.state.tx.us/SearchBA.aspx"
+      "06-Scraper Writer.ipynb":
+        title: "AI-powered scraper writer"
+        description: "Point an AI agent at a website and let it write a Playwright scraper for you. You describe what you want in plain English, it explores the page and produces a working script. Requires a free Google AI API key."
+        order: 7
+        install:
+          - "pydantic-ai-slim[google]"
+          - "playwright"
+          - "beautifulsoup4"
+          - "pandas"
+          - "lxml"
+          - "html5lib"
+          - "panel"
+          - "jupyter_bokeh"
+        links:
+          - name: "Google AI Studio (free API key)"
+            url: "https://aistudio.google.com/apikey"
+          - name: "PydanticAI"
+            url: "https://ai.pydantic.dev/"
 
 newsletter_signup: |
   <p class="newsletter-title">Manual Checks</p>

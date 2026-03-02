@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI-powered scraper writer</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Inter:wght@400;500;600&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../static/base.css">
+    
+<link rel="stylesheet" href="../static/read.css">
+
+    <script>
+    // Set theme before paint to avoid FOUC
+    (function(){var s=localStorage.getItem('theme');var t=s||(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.className='theme-'+(t==='dark'?'noir':'broadsheet');})();
+    </script>
+</head>
+<body>
+
+<div class="theme-switcher">
+    <button class="active" onclick="setTheme('dark', this)">Dark</button>
+    <button onclick="setTheme('light', this)">Light</button>
+</div>
+
+<div class="page">
+    
+
+<nav class="nb-topnav">
+    <a href="../index.html" class="nb-topnav-home">&larr; Home</a>
+    
+    <div class="nb-topnav-title">Browser automation with Playwright</div>
+    
+    <ol class="nb-topnav-list">
+        
+        <li>
+            
+            <a href="00-opensyllabus-ANSWERS.html">Introduction to Playwright with OpenSyllabus</a>
+            
+        </li>
+        
+        <li>
+            
+            <a href="01-texas-tow-trucks-licenses-ANSWERS.html">Scraping Texas tow truck licenses</a>
+            
+        </li>
+        
+        <li>
+            
+            <a href="02-iowa-appraisal-management-companies-ANSWERS.html">Paginating through Iowa appraisal companies</a>
+            
+        </li>
+        
+        <li>
+            
+            <a href="03-north-dakota-oil-wells-ANSWERS.html">Looping through North Dakota oil well townships</a>
+            
+        </li>
+        
+        <li>
+            
+            <a href="04-maryland-locksmiths-ANSWERS.html">Filling forms to find Maryland locksmiths</a>
+            
+        </li>
+        
+        <li>
+            
+            <a href="05-texas-medical-board-actions-details-ANSWERS.html">Downloading PDFs from the Texas Medical Board</a>
+            
+        </li>
+        
+        <li class="is-current">
+            
+            <span class="nb-topnav-current">AI-powered scraper writer</span>
+            
+        </li>
+        
+    </ol>
+</nav>
+
+
+
+<div class="nb-actions">
+    <a href="https://colab.research.google.com/github/jsoma/workshop-browser-automation/blob/main/docs/browser-automation/06-scraper-writer-ANSWERS.ipynb" class="nb-action-btn nb-action-colab" target="_blank" rel="noopener">Run in Colab</a>
+    <a href="06-scraper-writer-ANSWERS.ipynb" class="nb-action-btn nb-action-download" download>Download notebook</a>
+</div>
+
+
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=a3936b2f">
+<div class="input">
+<div class="prompt input_prompt">In [ ]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Install required packages</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="o">--</span><span class="n">quiet</span> <span class="s1">'pydantic-ai-slim[google]'</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="o">--</span><span class="n">quiet</span> <span class="n">playwright</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="o">--</span><span class="n">quiet</span> <span class="n">beautifulsoup4</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="o">--</span><span class="n">quiet</span> <span class="n">pandas</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="o">--</span><span class="n">quiet</span> <span class="n">lxml</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="o">--</span><span class="n">quiet</span> <span class="n">html5lib</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="o">--</span><span class="n">quiet</span> <span class="n">panel</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="o">--</span><span class="n">quiet</span> <span class="n">jupyter_bokeh</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'✓ Packages installed!'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered" id="cell-id=a772a358"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><strong>Slides:</strong> <a href="./browser-automation.pdf">browser-automation.pdf</a></p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered" id="cell-id=title"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Scraper-Writer-Agent">Scraper-Writer Agent<a class="anchor-link" href="#Scraper-Writer-Agent">¶</a></h1><p>A conversational AI agent that explores websites and writes Playwright scraping scripts for you.</p>
+<p><strong>How it works:</strong> You describe what you want to scrape in plain English. The agent navigates the page using Playwright, examines the DOM structure, and produces a complete scraping script that runs without AI in the loop.</p>
+<p><strong>What you need:</strong></p>
+<ul>
+<li>A Google account</li>
+<li>A free <code>GOOGLE_API_KEY</code> from <a href="https://aistudio.google.com/apikey">Google AI Studio</a></li>
+<li>Set it as an environment variable, or paste it in the cell below</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=install">
+<div class="input">
+<div class="prompt input_prompt">In [1]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1">#%pip install --quiet "pydantic-ai-slim[google]" playwright beautifulsoup4 pandas lxml html5lib panel jupyter_bokeh</span>
+<span class="c1">#!playwright install chromium firefox</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=imports">
+<div class="input">
+<div class="prompt input_prompt">In [ ]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="n">IN_COLAB</span> <span class="o">=</span> <span class="s1">'COLAB_GPU'</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span> <span class="ow">or</span> <span class="s1">'COLAB_RELEASE_TAG'</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bs4</span><span class="w"> </span><span class="kn">import</span> <span class="n">BeautifulSoup</span><span class="p">,</span> <span class="n">Comment</span><span class="p">,</span> <span class="n">NavigableString</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">playwright.async_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">async_playwright</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_ai</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">RunContext</span>
+
+<span class="c1"># Your Google AI API key — set as env var or paste here</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"GOOGLE_API_KEY"</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Set GOOGLE_API_KEY env var first — get one free at https://aistudio.google.com/apikey"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=browser">
+<div class="input">
+<div class="prompt input_prompt">In [3]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Colab can't open a visible browser, so we run headless there</span>
+<span class="k">if</span> <span class="n">IN_COLAB</span><span class="p">:</span>
+    <span class="n">use_headless</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">use_headless</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">playwright</span> <span class="o">=</span> <span class="k">await</span> <span class="n">async_playwright</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="n">browser</span> <span class="o">=</span> <span class="k">await</span> <span class="n">playwright</span><span class="o">.</span><span class="n">firefox</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span><span class="n">headless</span><span class="o">=</span><span class="n">use_headless</span><span class="p">)</span>
+<span class="n">page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">browser</span><span class="o">.</span><span class="n">new_page</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">add_init_script</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">    Object.defineProperty(navigator, 'webdriver', {get: () =&gt; undefined});</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=network">
+<div class="input">
+<div class="prompt input_prompt">In [ ]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">MAX_CAPTURED</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">captured_requests</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">log_api_response</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Background listener that captures XHR/fetch JSON responses."""</span>
+    <span class="n">request</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">request</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">resource_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"xhr"</span><span class="p">,</span> <span class="s2">"fetch"</span><span class="p">]:</span>
+        <span class="k">return</span>
+    <span class="n">content_type</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"content-type"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">"json"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">content_type</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">record_count</span> <span class="o">=</span> <span class="s2">"unknown"</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">record_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"results"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">,</span> <span class="s2">"items"</span><span class="p">,</span> <span class="s2">"records"</span><span class="p">,</span> <span class="s2">"rows"</span><span class="p">,</span> <span class="s2">"hits"</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">body</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">record_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">body</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+                    <span class="k">break</span>
+        <span class="n">captured_requests</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+            <span class="s2">"url"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">,</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="p">,</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+            <span class="s2">"record_count"</span><span class="p">:</span> <span class="n">record_count</span><span class="p">,</span>
+            <span class="s2">"post_data"</span><span class="p">:</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">post_data</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)[:</span><span class="mi">500</span><span class="p">],</span>
+        <span class="p">})</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">captured_requests</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_CAPTURED</span><span class="p">:</span>
+            <span class="n">captured_requests</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  API: [</span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> | ~</span><span class="si">{</span><span class="n">record_count</span><span class="si">}</span><span class="s2"> records | </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">[:</span><span class="mi">120</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+<span class="n">page</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s2">"response"</span><span class="p">,</span> <span class="n">log_api_response</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Network capture active — API requests will be logged automatically."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=dom-tree">
+<div class="input">
+<div class="prompt input_prompt">In [ ]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">JUNK_TAGS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"script"</span><span class="p">,</span> <span class="s2">"style"</span><span class="p">,</span> <span class="s2">"svg"</span><span class="p">,</span> <span class="s2">"noscript"</span><span class="p">,</span> <span class="s2">"iframe"</span><span class="p">,</span> <span class="s2">"path"</span><span class="p">,</span> <span class="s2">"defs"</span><span class="p">,</span> <span class="s2">"clippath"</span><span class="p">}</span>
+<span class="n">COLLAPSE_TAGS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"nav"</span><span class="p">,</span> <span class="s2">"footer"</span><span class="p">,</span> <span class="s2">"header"</span><span class="p">,</span> <span class="s2">"aside"</span><span class="p">}</span>
+<span class="n">KEY_ATTRS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">,</span> <span class="s2">"role"</span><span class="p">,</span> <span class="s2">"data-testid"</span><span class="p">,</span> <span class="s2">"aria-label"</span><span class="p">,</span> <span class="s2">"for"</span><span class="p">,</span> <span class="s2">"action"</span><span class="p">]</span>
+<span class="c1"># data-* attrs to skip — framework noise that doesn't help build selectors</span>
+<span class="n">_JUNK_DATA_ATTRS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"data-testid"</span><span class="p">,</span> <span class="s2">"data-reactid"</span><span class="p">,</span> <span class="s2">"data-reactroot"</span><span class="p">,</span> <span class="s2">"data-react-helmet"</span><span class="p">,</span>
+                     <span class="s2">"data-emotion-css"</span><span class="p">,</span> <span class="s2">"data-styled"</span><span class="p">,</span> <span class="s2">"data-rbd-draggable-id"</span><span class="p">,</span>
+                     <span class="s2">"data-radix-collection-item"</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_generated_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Detect auto-generated CSS class names (styled-components, emotion, CSS modules, JSS)."""</span>
+    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^sc-[a-f0-9]+-\d+$'</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^css-[a-z0-9]+$'</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">'__[a-zA-Z0-9]{5,}$'</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^jss\d+$'</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">dom_to_tree</span><span class="p">(</span><span class="n">html</span><span class="p">,</span> <span class="n">selector</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">max_text</span><span class="o">=</span><span class="mi">80</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Convert HTML to a compact tree outline for LLM consumption.</span>
+
+<span class="sd">    Shows tag#id.class[attr=val] notation with sibling deduplication,</span>
+<span class="sd">    collapsed nav/footer/header/aside, and junk tag removal.</span>
+<span class="sd">    """</span>
+    <span class="n">soup</span> <span class="o">=</span> <span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">html</span><span class="p">,</span> <span class="s2">"html.parser"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">selector</span><span class="p">:</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">select_one</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">root</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"No element found for selector: </span><span class="si">{</span><span class="n">selector</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">soup</span>
+
+    <span class="c1"># Strip junk</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">JUNK_TAGS</span><span class="p">):</span>
+        <span class="n">tag</span><span class="o">.</span><span class="n">decompose</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">Comment</span><span class="p">)):</span>
+        <span class="n">comment</span><span class="o">.</span><span class="n">extract</span><span class="p">()</span>
+
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">sig</span><span class="p">(</span><span class="n">tag</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""tag#id.class[attr=val] signature."""</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">if</span> <span class="n">tag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">):</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"#</span><span class="si">{</span><span class="n">tag</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">tag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"class"</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_generated_class</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">classes</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">"."</span> <span class="o">+</span> <span class="s2">"."</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">classes</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">KEY_ATTRS</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">attr</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">)[:</span><span class="mi">40</span><span class="p">]</span><span class="si">}</span><span class="s2">]"</span>
+        <span class="k">if</span> <span class="n">tag</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"a"</span> <span class="ow">and</span> <span class="n">tag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"href"</span><span class="p">):</span>
+            <span class="n">href</span> <span class="o">=</span> <span class="n">tag</span><span class="p">[</span><span class="s2">"href"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">href</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"javascript:"</span><span class="p">):</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[href=</span><span class="si">{</span><span class="n">href</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span><span class="si">}</span><span class="s2">]"</span>
+        <span class="c1"># Show one meaningful data-* attr (skip framework junk and hex hashes)</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">tag</span><span class="o">.</span><span class="n">attrs</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="s1">'attrs'</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]:</span>
+            <span class="k">if</span> <span class="n">attr</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"data-"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_JUNK_DATA_ATTRS</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">tag</span><span class="p">[</span><span class="n">attr</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">val</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^[a-f0-9]{6,}$'</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+                    <span class="n">s</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">attr</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">val</span><span class="p">[:</span><span class="mi">30</span><span class="p">]</span><span class="si">}</span><span class="s2">]"</span>
+                    <span class="k">break</span>
+        <span class="k">return</span> <span class="n">s</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">structure</span><span class="p">(</span><span class="n">tag</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Fingerprint for sibling deduplication: signature + child tag names."""</span>
+        <span class="n">child_tags</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">tag</span><span class="o">.</span><span class="n">children</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">sig</span><span class="p">(</span><span class="n">tag</span><span class="p">),</span> <span class="n">child_tags</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">direct_text</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""First direct text content of a node (not from child elements)."""</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">NavigableString</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">Comment</span><span class="p">):</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">text</span><span class="p">[:</span><span class="n">max_text</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="s2">"..."</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_text</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">)</span> <span class="ow">or</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="n">max_depth</span><span class="p">:</span>
+            <span class="n">child_count</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">child_count</span><span class="p">:</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"  "</span> <span class="o">*</span> <span class="n">depth</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">child_count</span><span class="si">}</span><span class="s2"> children, truncated]"</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Collapse nav, footer, header, aside</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">COLLAPSE_TAGS</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"  "</span> <span class="o">*</span> <span class="n">depth</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">sig</span><span class="p">(</span><span class="n">node</span><span class="p">)</span><span class="si">}</span><span class="s2">: [collapsed]"</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">node_sig</span> <span class="o">=</span> <span class="n">sig</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">direct_text</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"  "</span> <span class="o">*</span> <span class="n">depth</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">node_sig</span><span class="si">}</span><span class="s1">: "</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s1">"'</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"  "</span> <span class="o">*</span> <span class="n">depth</span> <span class="o">+</span> <span class="n">node_sig</span><span class="p">)</span>
+
+        <span class="c1"># Process children with sibling deduplication</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">children</span><span class="p">):</span>
+            <span class="n">child</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">fingerprint</span> <span class="o">=</span> <span class="n">structure</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+
+            <span class="c1"># Count consecutive siblings with same structure</span>
+            <span class="n">run</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">while</span> <span class="n">i</span> <span class="o">+</span> <span class="n">run</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">children</span><span class="p">)</span> <span class="ow">and</span> <span class="n">structure</span><span class="p">(</span><span class="n">children</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">run</span><span class="p">])</span> <span class="o">==</span> <span class="n">fingerprint</span><span class="p">:</span>
+                <span class="n">run</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">run</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="c1"># Show first example, then summary</span>
+                <span class="n">render</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"  "</span> <span class="o">*</span> <span class="p">(</span><span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">"... and </span><span class="si">{</span><span class="n">run</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> more </span><span class="si">{</span><span class="n">child</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> with same structure"</span><span class="p">)</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="n">run</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">render</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">render</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"DOM tree helper ready."</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=agent">
+<div class="input">
+<div class="prompt input_prompt">In [ ]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Deps</span><span class="p">:</span>
+    <span class="n">page</span><span class="p">:</span> <span class="nb">object</span>
+
+<span class="n">MODEL_NAME</span> <span class="o">=</span> <span class="s2">"google-gla:gemini-2.5-flash"</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+    <span class="n">MODEL_NAME</span><span class="p">,</span>
+    <span class="n">deps_type</span><span class="o">=</span><span class="n">Deps</span><span class="p">,</span>
+    <span class="n">retries</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">"You are a scraper-writing assistant for journalists. You explore websites "</span>
+        <span class="s2">"using your browser tools and write Playwright + BeautifulSoup scraping scripts.</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"## Your workflow</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"1. Navigate to the target URL and read the page structure</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"2. Use scan_page() on long pages to find tables and data sections that might be below the fold</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"3. Use list_elements() to see forms, dropdowns, and buttons</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"4. Interact with forms if needed (fill inputs, select dropdowns, click buttons)</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"5. Check get_network_requests() to see if the site uses a hidden JSON API</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"6. Write a complete, runnable Playwright script</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"## Code style rules (MANDATORY)</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Use flat async/await Playwright — NO asyncio, NO sync_playwright</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"    - NO: playwright = sync_playwright().start()</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"    - YES: playwright = await async_playwright().start()</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Do not put main code in function, it will be run in a cell and we need the outputs</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"    - NO: async def scrape_page(): ...; await main(), `df` in function</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"    - YES: all code at top level, `df` available at the end of the cell</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Code must be runnable in Jupyter notebook cells (top-level await)</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Use firefox as your browser of choice</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Use `await page.content()` + BeautifulSoup for extraction</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Build DataFrames from a list of dicts</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Extract each field defensively with try/except per field</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Use meaningful CSS selectors — NEVER use generated classes like `.sc-ae8b6d27-3` or `.iUtzsJ`</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Prefer: `.result`, `.card`, `div:has(h2)`, `tr:has(td)`, `[data-testid=...]`</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- All timeouts in your generated code must be &gt;= 10 seconds (10000ms)</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Avoid page.wait_for_timeout() — use page.wait_for_selector() instead</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Don't close the browser — the user handles that</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Show results with df.head()</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Use Firefox (`playwright.firefox.launch`) when downloading PDFs</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"## Important behaviors</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- If you discover a hidden JSON API via network requests, TELL THE USER immediately "</span>
+        <span class="s2">"and offer a simpler requests-based approach instead</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Always test one page of results before writing a pagination loop</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- When writing the final script, include ALL setup code (imports, browser launch) "</span>
+        <span class="s2">"so it runs in a fresh notebook cell</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Be concise — journalists are busy</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- If results use pagination, check read_page('nav') or scan_page() to find pagination controls</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"## When you get stuck</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- ASK THE USER a clarifying question instead of giving up</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- If a button appears disabled, WAIT — pages often enable buttons after JS runs</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- Try at least 2-3 approaches before asking for help</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"- If you successfully performed an action (clicked, filled a form), read the page again to see what changed</span><span class="se">\n</span><span class="s2">"</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+
+<span class="c1"># --- Tools ---</span>
+    
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">navigate</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">],</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Navigate to a URL. Returns the page title."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; navigate(</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span> <span class="n">wait_until</span><span class="o">=</span><span class="s2">"domcontentloaded"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">wait_for_load_state</span><span class="p">(</span><span class="s2">"networkidle"</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5000</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Navigated to: </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">)"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error navigating to </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_page</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">],</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get a compact tree outline of the page DOM showing tag names, classes, IDs, and attributes.</span>
+<span class="sd">    Pass a CSS selector to zoom into a specific section for more detail."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; read_page(</span><span class="si">{</span><span class="n">selector</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">html</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">content</span><span class="p">()</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">dom_to_tree</span><span class="p">(</span><span class="n">html</span><span class="p">,</span> <span class="n">selector</span><span class="o">=</span><span class="n">selector</span> <span class="k">if</span> <span class="n">selector</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tree</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">return</span> <span class="s2">"Page appears empty or could not be parsed."</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">15000</span><span class="p">:</span>
+            <span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span><span class="p">[:</span><span class="mi">15000</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">... [truncated — use a more specific selector to zoom in, or try scan_page() to find data sections]"</span>
+        <span class="k">return</span> <span class="n">tree</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error reading page: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">scan_page</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Quick inventory of data-bearing elements on the full page: tables, long lists,</span>
+<span class="sd">    and landmark sections. Use on long pages where read_page might truncate content."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"  -&gt; scan_page()"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s2">"""() =&gt; {</span>
+<span class="s2">            const items = [];</span>
+<span class="s2">            document.querySelectorAll('table').forEach(el =&gt; {</span>
+<span class="s2">                const rows = el.querySelectorAll('tr').length;</span>
+<span class="s2">                const id = el.id ? '#' + el.id : '';</span>
+<span class="s2">                const cls = [...el.classList].find(c =&gt; !/^(sc-|css-|jss)/.test(c));</span>
+<span class="s2">                const selector = 'table' + id + (cls ? '.' + cls : '');</span>
+<span class="s2">                const headers = Array.from(el.querySelectorAll('th'))</span>
+<span class="s2">                    .map(th =&gt; th.textContent.trim()).filter(Boolean).slice(0, 8);</span>
+<span class="s2">                items.push('TABLE ' + selector + ': ' + rows + ' rows'</span>
+<span class="s2">                    + (headers.length ? ' | cols: ' + headers.join(', ') : ''));</span>
+<span class="s2">            });</span>
+<span class="s2">            document.querySelectorAll('ul, ol').forEach(el =&gt; {</span>
+<span class="s2">                const liCount = el.querySelectorAll(':scope &gt; li').length;</span>
+<span class="s2">                if (liCount &lt; 3) return;</span>
+<span class="s2">                const id = el.id ? '#' + el.id : '';</span>
+<span class="s2">                const cls = [...el.classList].find(c =&gt; !/^(sc-|css-|jss)/.test(c));</span>
+<span class="s2">                const tag = el.tagName.toLowerCase();</span>
+<span class="s2">                const sample = el.querySelector('li')?.textContent?.trim()?.slice(0, 50) || '';</span>
+<span class="s2">                items.push(tag.toUpperCase() + ' ' + tag + id + (cls ? '.' + cls : '')</span>
+<span class="s2">                    + ': ' + liCount + ' items | first: "' + sample + '"');</span>
+<span class="s2">            });</span>
+<span class="s2">            document.querySelectorAll('main, article, section').forEach(el =&gt; {</span>
+<span class="s2">                const id = el.id ? '#' + el.id : '';</span>
+<span class="s2">                if (!id &amp;&amp; !el.getAttribute('aria-label')) return;</span>
+<span class="s2">                const tag = el.tagName.toLowerCase();</span>
+<span class="s2">                const label = el.getAttribute('aria-label') || '';</span>
+<span class="s2">                const heading = el.querySelector('h1,h2,h3')?.textContent?.trim()?.slice(0, 60) || '';</span>
+<span class="s2">                items.push('SECTION ' + tag + id + (label ? ' [' + label + ']' : '')</span>
+<span class="s2">                    + (heading ? ': "' + heading + '"' : ''));</span>
+<span class="s2">            });</span>
+<span class="s2">            return items.slice(0, 30);</span>
+<span class="s2">        }"""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"No tables, lists, or labeled sections found."</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error scanning page: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_elements</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""List interactive elements on the page: buttons, inputs, dropdowns (with their options), and links."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; list_elements()"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s2">"""() =&gt; {</span>
+<span class="s2">            const items = [];</span>
+<span class="s2">            document.querySelectorAll('button, [role=button], input[type=submit], input[type=button]').forEach(el =&gt; {</span>
+<span class="s2">                const text = (el.textContent || el.value || '').trim().slice(0, 80);</span>
+<span class="s2">                if (text) items.push({type: 'button', text, id: el.id || '', name: el.name || ''});</span>
+<span class="s2">            });</span>
+<span class="s2">            document.querySelectorAll('input[type=text], input[type=search], input:not([type]), textarea').forEach(el =&gt; {</span>
+<span class="s2">                const label = el.labels?.[0]?.textContent?.trim() || el.placeholder || el.getAttribute('aria-label') || el.name || el.id || '';</span>
+<span class="s2">                items.push({type: 'input', label: label.slice(0, 80), id: el.id || '', name: el.name || ''});</span>
+<span class="s2">            });</span>
+<span class="s2">            document.querySelectorAll('select').forEach(el =&gt; {</span>
+<span class="s2">                const label = el.labels?.[0]?.textContent?.trim() || el.getAttribute('aria-label') || el.name || el.id || '';</span>
+<span class="s2">                const options = Array.from(el.options).map(o =&gt; o.text.trim()).filter(t =&gt; t).slice(0, 20);</span>
+<span class="s2">                items.push({type: 'select', label: label.slice(0, 80), id: el.id || '', name: el.name || '', options});</span>
+<span class="s2">            });</span>
+<span class="s2">            let linkCount = 0;</span>
+<span class="s2">            document.querySelectorAll('a[href]').forEach(el =&gt; {</span>
+<span class="s2">                if (linkCount &gt;= 20) return;</span>
+<span class="s2">                const text = (el.textContent || '').trim().slice(0, 80);</span>
+<span class="s2">                if (text &amp;&amp; text.length &gt; 1) {</span>
+<span class="s2">                    items.push({type: 'link', text, href: el.href.slice(0, 120)});</span>
+<span class="s2">                    linkCount++;</span>
+<span class="s2">                }</span>
+<span class="s2">            });</span>
+<span class="s2">            return items;</span>
+<span class="s2">        }"""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"No interactive elements found."</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"select"</span><span class="p">:</span>
+                <span class="n">opts</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"options"</span><span class="p">,</span> <span class="p">[])[:</span><span class="mi">10</span><span class="p">])</span>
+                <span class="n">more</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" (+</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'options'</span><span class="p">,</span><span class="w"> </span><span class="p">[]))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">10</span><span class="si">}</span><span class="s2"> more)"</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"options"</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="s2">""</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"SELECT '</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span><span class="si">}</span><span class="s2">' (id=</span><span class="si">{</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">): [</span><span class="si">{</span><span class="n">opts</span><span class="si">}{</span><span class="n">more</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">item</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"input"</span><span class="p">:</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"INPUT '</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span><span class="si">}</span><span class="s2">' (id=</span><span class="si">{</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">, name=</span><span class="si">{</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'name'</span><span class="p">,</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">item</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"button"</span><span class="p">:</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"BUTTON '</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'text'</span><span class="p">]</span><span class="si">}</span><span class="s2">' (id=</span><span class="si">{</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">item</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"link"</span><span class="p">:</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"LINK '</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'text'</span><span class="p">]</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">[:</span><span class="mi">50</span><span class="p">])</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error listing elements: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">click</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">],</span> <span class="n">text_or_selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Click an element by its visible text (tried first) or a CSS selector (fallback).</span>
+<span class="sd">    Use a CSS selector like 'button.submit' or '#search-btn' when multiple elements share the same text."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; click(</span><span class="si">{</span><span class="n">text_or_selector</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">locator</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">get_by_text</span><span class="p">(</span><span class="n">text_or_selector</span><span class="p">,</span> <span class="n">exact</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="k">await</span> <span class="n">locator</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">locator</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">wait_for_load_state</span><span class="p">(</span><span class="s2">"domcontentloaded"</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5000</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"Clicked element with text '</span><span class="si">{</span><span class="n">text_or_selector</span><span class="si">}</span><span class="s2">'"</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">text_or_selector</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">wait_for_load_state</span><span class="p">(</span><span class="s2">"domcontentloaded"</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5000</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Clicked element: </span><span class="si">{</span><span class="n">text_or_selector</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Could not click '</span><span class="si">{</span><span class="n">text_or_selector</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fill_input</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">],</span> <span class="n">label_or_selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Fill a text input field by its label text (tried first) or CSS selector (fallback)."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; fill_input(</span><span class="si">{</span><span class="n">label_or_selector</span><span class="si">!r}</span><span class="s2">, </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">locator</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">get_by_label</span><span class="p">(</span><span class="n">label_or_selector</span><span class="p">)</span>
+        <span class="k">if</span> <span class="k">await</span> <span class="n">locator</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">locator</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"Filled '</span><span class="si">{</span><span class="n">label_or_selector</span><span class="si">}</span><span class="s2">' with '</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">'"</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">label_or_selector</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Filled '</span><span class="si">{</span><span class="n">label_or_selector</span><span class="si">}</span><span class="s2">' with '</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">'"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Could not fill '</span><span class="si">{</span><span class="n">label_or_selector</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">select_dropdown</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">],</span> <span class="n">label_or_selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">option</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Select an option from a &lt;select&gt; dropdown by its label text or CSS selector."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; select_dropdown(</span><span class="si">{</span><span class="n">label_or_selector</span><span class="si">!r}</span><span class="s2">, </span><span class="si">{</span><span class="n">option</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">locator</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">get_by_label</span><span class="p">(</span><span class="n">label_or_selector</span><span class="p">)</span>
+        <span class="k">if</span> <span class="k">await</span> <span class="n">locator</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">locator</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">select_option</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">option</span><span class="p">)</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"Selected '</span><span class="si">{</span><span class="n">option</span><span class="si">}</span><span class="s2">' from '</span><span class="si">{</span><span class="n">label_or_selector</span><span class="si">}</span><span class="s2">'"</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">select_option</span><span class="p">(</span><span class="n">label_or_selector</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">option</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Selected '</span><span class="si">{</span><span class="n">option</span><span class="si">}</span><span class="s2">' from '</span><span class="si">{</span><span class="n">label_or_selector</span><span class="si">}</span><span class="s2">'"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Could not select from '</span><span class="si">{</span><span class="n">label_or_selector</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_network_requests</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return captured XHR/fetch API requests (JSON only). Useful for discovering hidden APIs behind JS-heavy sites."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; get_network_requests()"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">captured_requests</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"No API requests captured yet. Navigate to a page and interact with it first."</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">captured_requests</span><span class="p">[</span><span class="o">-</span><span class="mi">20</span><span class="p">:]:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'method'</span><span class="p">]</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'status'</span><span class="p">]</span><span class="si">}</span><span class="s2"> | ~</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'record_count'</span><span class="p">]</span><span class="si">}</span><span class="s2"> records | </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'url'</span><span class="p">][:</span><span class="mi">150</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'post_data'</span><span class="p">):</span>
+            <span class="n">line</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">  POST body: </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'post_data'</span><span class="p">][:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">wait_for</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">],</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Wait for an element matching a CSS selector to appear or become visible. Use this when</span>
+<span class="sd">    a page is loading dynamic content, or when a button needs time to become enabled."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; wait_for(</span><span class="si">{</span><span class="n">selector</span><span class="si">!r}</span><span class="s2">, timeout=</span><span class="si">{</span><span class="n">timeout</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">wait_for_selector</span><span class="p">(</span><span class="n">selector</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s2">"visible"</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Element '</span><span class="si">{</span><span class="n">selector</span><span class="si">}</span><span class="s2">' is now visible."</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Timed out waiting for '</span><span class="si">{</span><span class="n">selector</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>                                                                                                           
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">open_tab</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>                                                                     
+<span class="w">    </span><span class="sd">"""Open a new browser tab and switch to it."""</span>                                                                    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"  -&gt; open_tab()"</span><span class="p">)</span>                                                                                          
+    <span class="k">try</span><span class="p">:</span>                                                                                                              
+        <span class="n">new_page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">new_page</span><span class="p">()</span>
+        <span class="n">new_page</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s2">"response"</span><span class="p">,</span> <span class="n">log_api_response</span><span class="p">)</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span> <span class="o">=</span> <span class="n">new_page</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Opened new tab. You now have </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">pages</span><span class="p">)</span><span class="si">}</span><span class="s2"> tabs."</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error opening tab: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">switch_tab</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">],</span> <span class="n">tab_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Switch to a different browser tab by index (0-based)."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; switch_tab(</span><span class="si">{</span><span class="n">tab_index</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">pages</span>
+        <span class="k">if</span> <span class="n">tab_index</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">tab_index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pages</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"Invalid tab index. You have </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pages</span><span class="p">)</span><span class="si">}</span><span class="s2"> tabs (0-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pages</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2">)."</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span> <span class="o">=</span> <span class="n">pages</span><span class="p">[</span><span class="n">tab_index</span><span class="p">]</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Switched to tab </span><span class="si">{</span><span class="n">tab_index</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2">)"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error switching tabs: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_tabs</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""List all open browser tabs."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"  -&gt; list_tabs()"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pages</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">pages</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pages</span><span class="p">):</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="k">await</span> <span class="n">p</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+            <span class="n">active</span> <span class="o">=</span> <span class="s2">" (active)"</span> <span class="k">if</span> <span class="n">p</span> <span class="o">==</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span> <span class="k">else</span> <span class="s2">""</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2"> — </span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">url</span><span class="si">}{</span><span class="n">active</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error listing tabs: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">go_back</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Navigate back (browser back button)."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"  -&gt; go_back()"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">go_back</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Went back to: </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error going back: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@agent</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_javascript</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">RunContext</span><span class="p">[</span><span class="n">Deps</span><span class="p">],</span> <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Execute JavaScript on the page and return the result. Use for checking element</span>
+<span class="sd">    state (disabled, hidden), triggering events, or reading values not in the DOM tree."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  -&gt; run_javascript(</span><span class="si">{</span><span class="n">code</span><span class="p">[:</span><span class="mi">80</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">deps</span><span class="o">.</span><span class="n">page</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)[:</span><span class="mi">2000</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"JS error: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Agent ready — navigate, read_page, scan_page, list_elements, click, fill_input, select_dropdown, get_network_requests"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=session">
+<div class="input">
+<div class="prompt input_prompt">In [7]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ChatSession</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Multi-turn conversation wrapper."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">,</span> <span class="n">deps</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="n">agent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deps</span> <span class="o">=</span> <span class="n">deps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">chat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">message</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">deps</span><span class="p">,</span> <span class="n">message_history</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">all_messages</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">output</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">captured_requests</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Conversation reset!"</span><span class="p">)</span>
+
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">ChatSession</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">Deps</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Session ready. Start chatting!"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Session ready. Start chatting!
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered" id="cell-id=tryit"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Try-it!">Try it!<a class="anchor-link" href="#Try-it!">¶</a></h2><p>Describe a website you want to scrape. The agent will explore it and write a Playwright script for you.</p>
+<p><strong>Example prompts:</strong></p>
+<blockquote>
+<p>Go to <a href="https://webapps1.chicago.gov/buildingrecords/home">https://webapps1.chicago.gov/buildingrecords/home</a> and figure out how to search for building permits at 121 N La Salle St in Chicago and save them as a CSV</p>
+</blockquote>
+<blockquote>
+<p>Explore <a href="https://analytics.opensyllabus.org/record/works">https://analytics.opensyllabus.org/record/works</a> and write a scraper for the top 100 books</p>
+</blockquote>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=chat1">
+<div class="input">
+<div class="prompt input_prompt">In [11]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># You used to have to do this. You don't now! You have a chatbot!</span>
+
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+    <span class="s2">"Go to https://webapps1.chicago.gov/buildingrecords/home and figure out how to search for building permits at 121 N La Salle St in Chicago and save them as a CSV"</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>  -&gt; navigate(https://webapps1.chicago.gov/buildingrecords/home)
+  -&gt; list_elements()
+  -&gt; click('Submit')
+  -&gt; list_elements()
+  -&gt; read_page('')
+  -&gt; run_javascript(document.getElementById('rbnAgreement1').click())
+  -&gt; click('Submit')
+  -&gt; read_page('')
+  -&gt; fill_input('fullAddress', '121 N La Salle St')
+  -&gt; fill_input('Building Address', '121 N La Salle St')
+  -&gt; click('Submit')
+  -&gt; read_page('')
+  -&gt; wait_for('table', timeout=20000)
+  -&gt; read_page('table')
+  -&gt; get_network_requests()
+I've successfully navigated to the site, accepted the terms, searched for the address "121 N La Salle St", and located the permit data in an HTML table.
+
+Here's a Playwright + BeautifulSoup script that will perform the search, extract the "Permit #", "Date Issued", and "Description of Work" from the table, and save the results to a CSV file.
+
+```python
+import pandas as pd
+from playwright.async_api import async_playwright
+from bs4 import BeautifulSoup
+
+async def scrape():
+    playwright = await async_playwright().start()
+    browser = await playwright.firefox.launch()
+    page = await browser.new_page()
+
+    await page.goto("https://webapps1.chicago.gov/buildingrecords/home")
+
+    # Accept the agreement
+    await page.wait_for_selector("#rbnAgreement1", timeout=10000)
+    await page.click("#rbnAgreement1")
+    await page.click("#submit")
+
+    # Fill the address and submit the form
+    await page.wait_for_selector("#fullAddress", timeout=10000)
+    await page.fill("#fullAddress", "121 N La Salle St")
+    await page.click("#submit")
+
+    # Wait for the results table to load
+    await page.wait_for_selector("table#resultstable_permits", timeout=20000)
+
+    # Extract data using BeautifulSoup
+    html_content = await page.content()
+    soup = BeautifulSoup(html_content, "html.parser")
+    
+    permits = []
+    
+    # Find the table and iterate through rows
+    results_table = soup.find("table", id="resultstable_permits")
+    if results_table:
+        rows = results_table.find("tbody").find_all("tr")
+        for row in rows:
+            try:
+                cols = row.find_all("td")
+                permit_number = cols[0].get_text(strip=True)
+                date_issued = cols[1].get_text(strip=True)
+                description_of_work = cols[2].get_text(strip=True)
+
+                permits.append({
+                    "Permit #": permit_number,
+                    "Date Issued": date_issued,
+                    "Description of Work": description_of_work
+                })
+            except Exception as e:
+                print(f"Error parsing row: {e}")
+                continue
+
+    # Create a Pandas DataFrame
+    df = pd.DataFrame(permits)
+
+    # Display the first few rows
+    print(df.head())
+
+    # Save to CSV
+    df.to_csv("chicago_building_permits_121_n_la_salle_st.csv", index=False)
+    print("\nPermit data saved to chicago_building_permits_121_n_la_salle_st.csv")
+
+    await browser.close()
+    await playwright.stop()
+
+# To run the scraper, simply call `await scrape()` in an async environment.
+# For example, in a Jupyter notebook cell:
+# await scrape()
+```
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=chat2">
+<div class="input">
+<div class="prompt input_prompt">In [9]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># response = await session.chat("Now write me the complete Playwright script.")</span>
+<span class="c1"># print(response)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=eededc7a">
+<div class="input">
+<div class="prompt input_prompt">In [ ]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">io</span>                                                                                                             
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">panel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pn</span>                                                                                                    
+<span class="n">pn</span><span class="o">.</span><span class="n">extension</span><span class="p">()</span>                                                                                                      
+<span class="n">pn</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="s2">"dark"</span>                                                                                              
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">callback</span><span class="p">(</span><span class="n">contents</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">instance</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">contents</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"reset"</span><span class="p">,</span> <span class="s2">"/reset"</span><span class="p">):</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s2">"Conversation reset! Start fresh."</span>
+
+    <span class="n">log</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">log</span><span class="p">):</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"**Error:** `</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">`"</span>
+
+    <span class="n">tool_log</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">tool_log</span><span class="p">:</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="sa">f</span><span class="s2">"```</span><span class="se">\n</span><span class="si">{</span><span class="n">tool_log</span><span class="si">}</span><span class="se">\n</span><span class="s2">```"</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s2">"Tools"</span><span class="p">,</span> <span class="n">respond</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">response</span>
+
+<span class="n">chat</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">ChatInterface</span><span class="p">(</span>
+    <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">,</span>
+    <span class="n">show_rerun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">show_undo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">chat</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+    <span class="s2">"Ready! Describe a site you want to scrape. Type **reset** to start over."</span><span class="p">,</span>
+    <span class="n">user</span><span class="o">=</span><span class="s2">"Agent"</span><span class="p">,</span>
+    <span class="n">respond</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">chat</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered" id="cell-id=tips"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Tips">Tips<a class="anchor-link" href="#Tips">¶</a></h2><p><strong>Start a new conversation:</strong> <code>session.reset()</code> — clears chat history and captured API requests.</p>
+<p><strong>Switch models:</strong> Change the model string in the agent definition above:</p>
+<ul>
+<li><code>google-gla:gemini-2.5-flash</code> — free, fast, good enough for most sites</li>
+<li><code>google-gla:gemini-2.5-pro</code> — free tier available, better at complex multi-step sites</li>
+</ul>
+<p><strong>Check captured APIs:</strong> Run <code>captured_requests</code> in any cell to see what JSON APIs the agent discovered.</p>
+<p><strong>If the agent gets stuck:</strong> Try being more specific — <em>"click the Search button"</em>, <em>"look at the table in div.results"</em> — or <code>session.reset()</code> and try a different approach. It's <em>very stupid</em> so it definitely won't work perfectly.</p>
+</div>
+</div>
+</div>
+
+
+
+<nav class="nb-nav">
+    
+    <a href="05-texas-medical-board-actions-details-ANSWERS.html" class="nb-nav-prev">&larr; Downloading PDFs from the Texas Medical Board</a>
+    
+    
+    <span></span>
+    
+</nav>
+
+
+
+<footer class="site-footer">
+    <div class="newsletter-signup">
+        <p class="newsletter-title">Manual Checks</p>
+<p class="newsletter-desc">A newsletter by Jonathan Soma</p>
+<script async src="https://subscribe-forms.beehiiv.com/embed.js"></script>
+<iframe src="https://subscribe-forms.beehiiv.com/74449fe6-9aee-4fca-81ec-c07b8588210f" class="newsletter-embed beehiiv-embed" data-test-id="beehiiv-embed" frameborder="0" scrolling="no"></iframe>
+
+    </div>
+</footer>
+
+
+</div>
+
+<script>
+function setTheme(theme, btn) {
+    var darkNames = {'dark':1, 'noir':1};
+    var cls = darkNames[theme] ? 'noir' : 'broadsheet';
+    document.documentElement.className = 'theme-' + cls;
+    document.querySelectorAll('.theme-switcher button').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    localStorage.setItem('theme', darkNames[theme] ? 'dark' : 'light');
+}
+
+// Sync button active state (theme already set by head script)
+(function() {
+    var saved = localStorage.getItem('theme');
+    var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    var label = theme === 'dark' ? 'Dark' : 'Light';
+    document.querySelectorAll('.theme-switcher button').forEach(function(b) {
+        b.classList.toggle('active', b.textContent.trim() === label);
+    });
+})();
+
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(e) {
+    if (!localStorage.getItem('theme')) {
+        var cls = e.matches ? 'broadsheet' : 'noir';
+        document.documentElement.className = 'theme-' + cls;
+        var label = e.matches ? 'Light' : 'Dark';
+        document.querySelectorAll('.theme-switcher button').forEach(function(b) {
+            b.classList.toggle('active', b.textContent.trim() === label);
+        });
+    }
+});
+</script>
+
+<script>
+// Detect blocked newsletter iframes and show a fallback link
+(function() {
+    function replaceWithLink(iframe, src) {
+        var link = document.createElement('a');
+        link.href = src;
+        link.className = 'newsletter-fallback-btn';
+        link.innerHTML = 'Subscribe to the newsletter &rarr;';
+        iframe.replaceWith(link);
+        // Also hide the beehiiv script tag if present
+        var scripts = document.querySelectorAll('.newsletter-signup script');
+        scripts.forEach(function(s) { s.remove(); });
+    }
+    document.querySelectorAll('.newsletter-signup iframe').forEach(function(iframe) {
+        var src = iframe.src;
+        if (!src) return;
+        // Check iframe dimensions after it settles — blocked iframes
+        // typically render as 0-height or very small
+        var timer = setTimeout(function() {
+            var h = iframe.offsetHeight || iframe.getBoundingClientRect().height;
+            if (h < 20) {
+                replaceWithLink(iframe, src);
+            }
+        }, 3000);
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+# Workshop configuration
+title: "Browser automation with Playwright"
+description: "Learn to scrape JavaScript-rendered websites using Playwright. We'll click buttons, fill out forms, loop through dropdowns and paginated results, and download files — all from the comfort of a Jupyter notebook."
+github_repo: "jsoma/workshop-browser-automation"
+github_branch: "main"
+
+# Workshop metadata
+author: "Jonathan Soma, Columbia University"
+conference_label: "NICAR 2026"
+
+meta_links:
+  - name: "js4571@columbia.edu"
+    url: "mailto:js4571@columbia.edu"
+  - name: "@dangerscarf"
+    url: "https://x.com/dangerscarf"
+  - name: "Lede Program"
+    url: "https://ledeprogram.com/"
+  - name: "jonathansoma.com"
+    url: "https://jonathansoma.com/"
+
+# Sections to process
+sections:
+  - title: "Browser Automation"
+    folder: "."
+    slides: "browser-automation.pdf"
+    notebooks:
+      "00-OpenSyllabus.ipynb":
+        title: "Introduction to Playwright with OpenSyllabus"
+        description: "When requests and BeautifulSoup can't see content because it's rendered by JavaScript, it's time to bring in a real browser. We'll use Playwright to scrape a JavaScript-heavy site, click 'Show More' buttons, and pull data into pandas."
+        order: 1
+        links:
+          - name: "Playwright for Python"
+            url: "https://playwright.dev/python/"
+          - name: "OpenSyllabus"
+            url: "https://opensyllabus.org/"
+      "01-Texas Tow Trucks Licenses.ipynb":
+        title: "Scraping Texas tow truck licenses"
+        description: "A gentle warm-up: select an option from a dropdown, click search, and grab the results table. Just enough interaction to get comfortable with Playwright's selectors."
+        order: 2
+        links:
+          - name: "Texas TDLR license search"
+            url: "https://www.tdlr.texas.gov/cimsfo/"
+      "02-Iowa Appraisal Management Companies.ipynb":
+        title: "Paginating through Iowa appraisal companies"
+        description: "What happens when results span multiple pages? We'll click 'Next Page' in a loop, collecting every table along the way and combining them with pandas."
+        order: 3
+        links:
+          - name: "Iowa Professional Licensing"
+            url: "https://ia-plb.my.site.com/LicenseSearchPage"
+      "03-North Dakota Oil Wells.ipynb":
+        title: "Looping through North Dakota oil well townships"
+        description: "Instead of paginating, this time we loop through every option in a dropdown. Each township gets its own search, and we stack all the results together."
+        order: 4
+        links:
+          - name: "ND Oil and Gas well search"
+            url: "https://www.dmr.nd.gov/oilgas/findwellsvw.asp"
+      "04-Maryland Locksmiths.ipynb":
+        title: "Filling forms to find Maryland locksmiths"
+        description: "Now we're typing into text fields instead of picking from dropdowns. We'll loop through a list of zip codes, fill in the search form each time, and collect the results."
+        order: 5
+        links:
+          - name: "Maryland electronic licensing"
+            url: "https://www.dllr.state.md.us/cgi-bin/ElectronicLicensing/OP_Search/OP_search.cgi?calling_app=locksmith::locksmith"
+      "05-Texas Medical Board Actions Details.ipynb":
+        title: "Downloading PDFs from the Texas Medical Board"
+        description: "The final boss: navigate to a page, fill in a license number, click through tabs, find document links, and download PDFs. Then do it all over again for a whole list of licenses."
+        order: 6
+        data_files:
+          - "licenses.csv"
+        links:
+          - name: "Texas Medical Board search"
+            url: "https://profile.tmb.state.tx.us/SearchBA.aspx"
+
+newsletter_signup: |
+  <p class="newsletter-title">Manual Checks</p>
+  <p class="newsletter-desc">A newsletter by Jonathan Soma</p>
+  <script async src="https://subscribe-forms.beehiiv.com/embed.js"></script>
+  <iframe src="https://subscribe-forms.beehiiv.com/74449fe6-9aee-4fca-81ec-c07b8588210f" class="newsletter-embed beehiiv-embed" data-test-id="beehiiv-embed" frameborder="0" scrolling="no"></iframe>
+
+# Default packages to install in setup cells
+default_install:
+  - "playwright"
+  - "beautifulsoup4"
+  - "lxml"
+  - "html5lib"
+  - "pandas"
+  - "nest_asyncio"
+
+# Publishing options
+output_dir: "docs"
